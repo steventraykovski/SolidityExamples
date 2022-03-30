@@ -4,12 +4,9 @@
 // It will be used by the Solidity compiler to validate its version.
 pragma solidity ^0.8.0;
 
-// We import this library to be able to use console.log
-import "hardhat/console.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol";
 
-
-// This is the main building block for smart contracts.
-contract Token {
+contract myContractSample {
     // Some string type variables to identify the token.
     string public name = "My Hardhat Token";
     string public symbol = "MHT";
@@ -20,9 +17,19 @@ contract Token {
     // An address type variable is used to store ethereum accounts.
     address public owner;
 
+    // A global variable is created to manage pause capabilities
+
+    bool public paused;
+
+    // A global variable to govern pause capabilities
+    bool public canPause = true;
+
+
     // A mapping is a key/value map. Here we store each account balance.
     mapping(address => uint256) balances;
 
+    event removePause();
+    
     /**
      * Contract initialization.
      *
@@ -42,21 +49,45 @@ contract Token {
      * The `external` modifier makes a function *only* callable from outside
      * the contract.
      */
-    function transfer(address to, uint256 amount) external {
-        // Check if the transaction sender has enough tokens.
-        // If `require`'s first argument evaluates to `false` then the
-        // transaction will revert.
+
+    // This function allows the contract owner to change the value of the bool variable 'paused'
+
+    function setPaused(bool _paused) public {
+        require(msg.sender == owner, "You are not the owner");
+       
+        require(canPause == true);
+
+        paused = _paused;
+    }
+
+    function removePauseCapability() public {
+        require(msg.sender == owner, "You are not the owner");
+
+        paused = false;
+        canPause = false;
+        
+        emit removePause();
+    }
+
+
+
+    // Transfer function example with pausing enabled locally in contract 
+
+    function transfer1(address to, uint256 amount) external {
+        
+        require(paused == false, "Function Paused");
         require(balances[msg.sender] >= amount, "Not enough tokens");
 
-        // We can print messages and values using console.log
-        console.log(
-            "Transferring from %s to %s %s tokens",
-            msg.sender,
-            to,
-            amount
-        );
+        balances[msg.sender] -= amount;
+        balances[to] += amount;
+    }
 
-        // Transfer the amount.
+    // Transfer function example with pausing enabled via Pausable.sol
+    
+    function transfer2(address to, uint256 amount) external whenNotPaused {
+        
+        require(balances[msg.sender] >= amount, "Not enough tokens");
+
         balances[msg.sender] -= amount;
         balances[to] += amount;
     }
